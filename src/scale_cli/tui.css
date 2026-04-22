@@ -1,0 +1,10 @@
+Screen {
+    layout: vertical;
+}
+
+#status {
+    padding: 1 2;
+    text-align: center;
+    color: $text-muted;
+    height: auto;
+}
