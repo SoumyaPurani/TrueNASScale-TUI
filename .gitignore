@@ -37,6 +37,9 @@ htmlcov/
 # Logs
 *.log
 
+# Code index
+graphify-out/
+
 # Project Specific
 # Local configuration files that should not be committed
 config.toml

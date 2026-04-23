@@ -61,10 +61,8 @@ class TrueNASWSClient:
         logger.info("connected")
 
     async def authenticate(self) -> None:
-        result = await self.call(
-            "auth.login_with_api_key", self._config.username, self._config.api_key
-        )
-        logger.info("authenticated as %s", self._config.username)
+        result = await self.call("auth.login_with_api_key", self._config.api_key)
+        logger.info("authenticated")
         return result
 
     async def call(self, method: str, *params: Any) -> Any:
@@ -133,18 +131,41 @@ class TrueNASWSClient:
         return await self.call("core.ping")
 
     async def system_info(self) -> dict[str, Any]:
-        return await self.call("system.info")
+        result = await self.call("system.info")
+        logger.info(
+            "system.info raw response: %s", json.dumps(result, default=str)[:2000]
+        )
+        return result
 
     async def device_info(self) -> dict[str, Any]:
-        return await self.call("device.get_info")
+        result = await self.call("device.get_info")
+        logger.info(
+            "device.get_info raw response: %s", json.dumps(result, default=str)[:2000]
+        )
+        return result
 
     async def reporting_realtime(self) -> dict[str, Any]:
-        return await self.call("reporting.realtime")
+        result = await self.call("reporting.realtime")
+        logger.debug(
+            "reporting.realtime raw response: %s",
+            json.dumps(result, default=str)[:2000],
+        )
+        return result
 
     async def pool_query(
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        return await self.call("pool.query", filters or [], options or {})
+        params: list[Any] = []
+        if filters:
+            params.append(filters)
+        if options and filters:
+            params.append(options)
+        result = await self.call("pool.query", *params)
+        logger.info(
+            "pool.query returned %d pools",
+            len(result) if isinstance(result, list) else 0,
+        )
+        return result
 
     async def pool_get_instance(self, pool_id: int) -> dict[str, Any]:
         return await self.call("pool.get_instance", pool_id)
@@ -155,15 +176,35 @@ class TrueNASWSClient:
     async def disk_query(
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        return await self.call("disk.query", filters or [], options or {})
+        params: list[Any] = []
+        if filters:
+            params.append(filters)
+        if options and filters:
+            params.append(options)
+        return await self.call("disk.query", *params)
 
     async def disk_temperatures(self) -> dict[str, Any]:
-        return await self.call("disk.temperatures")
+        result = await self.call("disk.temperatures")
+        logger.info(
+            "disk.temperatures keys: %s",
+            list(result.keys()) if isinstance(result, dict) else type(result).__name__,
+        )
+        return result
 
     async def service_query(
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        return await self.call("service.query", filters or [], options or {})
+        params: list[Any] = []
+        if filters:
+            params.append(filters)
+        if options and filters:
+            params.append(options)
+        result = await self.call("service.query", *params)
+        logger.info(
+            "service.query returned %d services",
+            len(result) if isinstance(result, list) else 0,
+        )
+        return result
 
     async def service_control(self, service: str, action: str) -> dict[str, Any]:
         return await self.call(

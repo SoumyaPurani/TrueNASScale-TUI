@@ -2,9 +2,117 @@ Screen {
     layout: vertical;
 }
 
-#status {
+SystemInfoCard {
+    layout: vertical;
+    height: auto;
+    min-width: 40;
+    border: round $primary;
     padding: 1 2;
-    text-align: center;
+    margin: 0 1;
+    background: $surface;
+}
+
+SystemInfoCard .card-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+SystemInfoCard .info-row {
+    height: 1;
+}
+
+RealtimeMetrics {
+    layout: vertical;
+    height: auto;
+    min-width: 30;
+    border: round $secondary;
+    padding: 1 2;
+    margin: 0 1;
+    background: $surface;
+}
+
+RealtimeMetrics .card-title {
+    text-style: bold;
+    color: $secondary;
+    margin-bottom: 1;
+}
+
+RealtimeMetrics .metric-label {
     color: $text-muted;
+    height: 1;
+}
+
+RealtimeMetrics .metric-spark {
+    height: 2;
+    margin-bottom: 1;
+}
+
+PoolSummaryTable {
+    layout: vertical;
+    height: auto;
+    border: round $success;
+    padding: 1 2;
+    margin: 0 1;
+    background: $surface;
+}
+
+PoolSummaryTable .card-title {
+    text-style: bold;
+    color: $success;
+    margin-bottom: 1;
+}
+
+DiskSummaryTable {
+    layout: vertical;
+    height: auto;
+    border: round $accent;
+    padding: 1 2;
+    margin: 0 1;
+    background: $surface;
+}
+
+DiskSummaryTable .card-title {
+    text-style: bold;
+    color: $accent;
+    margin-bottom: 1;
+}
+
+ServiceSummaryTable {
+    layout: vertical;
+    height: auto;
+    border: round $warning;
+    padding: 1 2;
+    margin: 0 1;
+    background: $surface;
+}
+
+ServiceSummaryTable .card-title {
+    text-style: bold;
+    color: $warning;
+    margin-bottom: 1;
+}
+
+#connection-banner {
+    dock: top;
+    height: 1;
+    color: $error;
+    background: $surface;
+    text-align: center;
+}
+
+#dashboard-scroll {
+    height: 1fr;
+}
+
+#top-row {
+    height: auto;
+}
+
+#tables-row {
+    height: auto;
+}
+
+DataTable {
     height: auto;
 }

@@ -1,8 +1,9 @@
 [project]
 name = "scale-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "TUI for TrueNAS SCALE 25.04+ — JSON-RPC over WebSocket"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Soumya Purani", email = "66162598+SoumyaPurani@users.noreply.github.com" }
 ]

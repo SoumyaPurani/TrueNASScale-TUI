@@ -5,12 +5,16 @@ import logging
 from typing import Any
 
 from textual import work
-from textual.app import App, ComposeResult
+from textual.app import App
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Static
 
-from .api import TrueNASWSClient
+from .api import TrueNASAPIError, TrueNASWSClient
 from .config import ScaleConfig, load_config
+from .screens.dashboard import DashboardScreen
+from .screens.first_run import FirstRunScreen
+from .screens.services import ServicesScreen
+from .screens.settings import SettingsScreen
+from .screens.storage import StorageScreen
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +24,28 @@ class ScaleApp(App[None]):
     TITLE = "scale-cli"
     SUB_TITLE = "TrueNAS Scale TUI"
 
+    SCREENS = {
+        "dashboard": DashboardScreen,
+        "storage": StorageScreen,
+        "services": ServicesScreen,
+        "first_run": FirstRunScreen,
+        "settings": SettingsScreen,
+    }
+
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("d", "toggle_dark", "Dark mode"),
         ("r", "refresh_data", "Refresh"),
+        ("1", "switch_screen('dashboard')", "Dashboard"),
+        ("2", "switch_screen('storage')", "Storage"),
+        ("3", "switch_screen('services')", "Services"),
+        ("c", "settings", "Settings"),
+        ("l", "logout", "Logout"),
     ]
 
     connected: reactive[bool] = reactive(False)
+    connection_error: reactive[str] = reactive("")
     system_info: reactive[dict[str, Any]] = reactive(dict)
-    device_info: reactive[dict[str, Any]] = reactive(dict)
     realtime: reactive[dict[str, Any]] = reactive(dict)
     pools: reactive[list[dict[str, Any]]] = reactive(list)
     disks: reactive[list[dict[str, Any]]] = reactive(list)
@@ -47,13 +64,33 @@ class ScaleApp(App[None]):
             raise RuntimeError(msg)
         return self._api
 
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Static(id="status")
-        yield Footer()
-
     def on_mount(self) -> None:
+        if not self._config.api_key:
+            self.push_screen("first_run")
+        else:
+            self.push_screen("dashboard")
+            self.connect_and_subscribe()
+
+    def connect_and_subscribe(self) -> None:
         self._init_worker()
+
+    def action_switch_screen(self, name: str) -> None:
+        self.push_screen(name)
+
+    def action_settings(self) -> None:
+        self.push_screen("settings")
+
+    def action_logout(self) -> None:
+        self._teardown_worker()
+        self.connected = False
+        self.connection_error = ""
+        self.system_info = {}
+        self.realtime = {}
+        self.pools = []
+        self.disks = []
+        self.disk_temps = {}
+        self.services = []
+        self.push_screen("first_run")
 
     def on_unmount(self) -> None:
         self._teardown_worker()
@@ -65,20 +102,36 @@ class ScaleApp(App[None]):
             async with self.api:
                 await self.api.authenticate()
                 self.connected = True
-                self._update_status("connected")
+                self.connection_error = ""
+                self.notify("Connected to TrueNAS")
                 self._subscribe_worker()
                 await self._refresh_all()
-                await asyncio.sleep_forever()
+                self.set_interval(10, self._poll_realtime)
+                await asyncio.Future()
+        except TrueNASAPIError as exc:
+            self.connected = False
+            self.connection_error = f"[{exc.code}] {exc.message}"
+            logger.exception("API error")
+            self.notify(
+                f"API error: {exc.message}",
+                severity="error",
+                timeout=10,
+            )
         except Exception as exc:
             self.connected = False
-            self._update_status(f"connection error: {exc}")
+            self.connection_error = str(exc) or "unknown error"
             logger.exception("connection failed")
+            self.notify(
+                f"Connection failed: {self.connection_error}",
+                severity="error",
+                timeout=10,
+            )
 
     @work(exclusive=True)
     async def _teardown_worker(self) -> None:
         if self._api and self.api.connected:
             await self.api.disconnect()
-            self.connected = False
+        self.connected = False
 
     @work(name="subscription-listener", group="subscriptions", exclusive=True)
     async def _subscribe_worker(self) -> None:
@@ -177,27 +230,41 @@ class ScaleApp(App[None]):
     async def _refresh_all(self) -> None:
         results = await asyncio.gather(
             self.api.system_info(),
-            self.api.device_info(),
             self.api.pool_query(),
             self.api.disk_query(),
             self.api.disk_temperatures(),
             self.api.service_query(),
             return_exceptions=True,
         )
-        info, dev, pools, disks, temps, services = results
+        info, pools, disks, temps, services = results
 
         if not isinstance(info, Exception):
-            self.system_info = info
-        if not isinstance(dev, Exception):
-            self.device_info = dev
+            self.log(
+                f"system_info raw keys: {sorted(info.keys()) if isinstance(info, dict) else type(info).__name__}"
+            )
+            self.system_info = self._normalize_system_info(info)
+        else:
+            self.log(f"system_info error: {info}")
+
         if not isinstance(pools, Exception):
-            self.pools = pools
+            self.pools = pools if isinstance(pools, list) else []
         if not isinstance(disks, Exception):
-            self.disks = disks
+            self.disks = disks if isinstance(disks, list) else []
         if not isinstance(temps, Exception):
-            self.disk_temps = temps
+            self.disk_temps = temps if isinstance(temps, dict) else {}
         if not isinstance(services, Exception):
-            self.services = services
+            self.services = services if isinstance(services, list) else []
+
+    @work(name="realtime-poll", group="realtime", exclusive=True)
+    async def _poll_realtime(self) -> None:
+        if not self.connected:
+            return
+        try:
+            self.realtime = await self.api.reporting_realtime()
+            temps = await self.api.disk_temperatures()
+            self.disk_temps = temps
+        except Exception:
+            logger.debug("realtime poll failed", exc_info=True)
 
     def action_refresh_data(self) -> None:
         if self.connected:
@@ -208,11 +275,18 @@ class ScaleApp(App[None]):
         await self._refresh_all()
 
     def watch_connected(self, connected: bool) -> None:
-        self._update_status("connected" if connected else "disconnected")
+        pass
 
-    def _update_status(self, text: str) -> None:
-        try:
-            widget = self.query_one("#status", Static)
-            widget.update(text)
-        except Exception:
-            pass
+    @staticmethod
+    def _normalize_system_info(raw: dict[str, Any]) -> dict[str, Any]:
+        out = dict(raw)
+
+        uptime_seconds = raw.get("uptime_seconds")
+        if isinstance(uptime_seconds, (int, float)) and uptime_seconds >= 0:
+            total = int(uptime_seconds)
+            days = total // 86400
+            hours = (total % 86400) // 3600
+            minutes = (total % 3600) // 60
+            out["uptime_str"] = f"{days}d {hours}h {minutes}m"
+
+        return out
