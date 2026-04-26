@@ -42,6 +42,57 @@ You can also provide connection details via CLI flags or environment variables:
 uv run scale-cli --server 192.168.1.100 --api-key 1-abc...
 ```
 
+## Docker
+
+Run scale-cli in a container — no Python or uv installation required.
+
+### Build and run
+
+```bash
+docker build -t scale-cli .
+docker run -it --rm \
+  -e TRUENAS_SERVER=192.168.1.100 \
+  -e TRUENAS_API_KEY=1-abc... \
+  -e TRUENAS_VERIFY_SSL=false \
+  scale-cli
+```
+
+> **Note:** The `-it` flags are required — scale-cli is a TUI app that needs an interactive terminal.
+
+### Docker Compose
+
+```bash
+# Set your connection details
+export TRUENAS_SERVER=192.168.1.100
+export TRUENAS_API_KEY=1-abc...
+
+# Run
+docker compose run --rm scale-cli
+```
+
+Or create a `.env` file in the project root:
+
+```env
+TRUENAS_SERVER=192.168.1.100
+TRUENAS_API_KEY=1-abc...
+TRUENAS_USERNAME=admin
+TRUENAS_VERIFY_SSL=false
+```
+
+Then simply:
+
+```bash
+docker compose run --rm scale-cli
+```
+
+### CLI flags with Docker
+
+You can pass CLI flags after the image name:
+
+```bash
+docker run -it --rm scale-cli --server 192.168.1.100 --api-key 1-abc... --no-verify-ssl
+```
+
 ## CLI Flags
 
 | Flag | Env Variable | Description |

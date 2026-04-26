@@ -1,0 +1,11 @@
+services:
+  scale-cli:
+    build: .
+    stdin_open: true
+    tty: true
+    environment:
+      - TRUENAS_SERVER=${TRUENAS_SERVER:-truenas.local}
+      - TRUENAS_API_KEY=${TRUENAS_API_KEY:-}
+      - TRUENAS_USERNAME=${TRUENAS_USERNAME:-admin}
+      - TRUENAS_VERIFY_SSL=${TRUENAS_VERIFY_SSL:-false}
+      - TERM=xterm-256color

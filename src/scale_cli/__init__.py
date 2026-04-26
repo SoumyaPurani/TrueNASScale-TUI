@@ -24,7 +24,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    config = load_config()
+    try:
+        config = load_config()
+    except Exception:
+        config = ScaleConfig()
 
     if args.server:
         config.server_host = args.server

@@ -43,6 +43,7 @@ class ScaleConfig:
 
 def load_config() -> ScaleConfig:
     cfg = ScaleConfig()
+    data = {}
 
     if CONFIG_FILE.exists():
         try:
