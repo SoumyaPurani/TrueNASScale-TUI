@@ -1,4 +1,4 @@
-# scale-cli
+# TrueNASScale-TUI
 
 A terminal user interface for TrueNAS SCALE 25.04+, built with [Textual](https://textual.textualize.io/).
 
@@ -23,15 +23,15 @@ Connects to TrueNAS via **JSON-RPC 2.0 over WebSocket** — the only API availab
 ## Installation
 
 ```bash
-git clone https://github.com/SoumyaPurani/TrueNASScale-TUI
-cd scale-cli
+git clone https://github.com/SoumyaPurani/TrueNASScale-TUI.git
+cd TrueNASScale-TUI
 uv sync
 ```
 
 ## Quick Start
 
 ```bash
-uv run scale-cli
+uv run truenasscale-tui
 ```
 
 On first run with no API key configured, an interactive setup form will appear. Enter your TrueNAS server host/IP and API key to connect.
@@ -39,25 +39,38 @@ On first run with no API key configured, an interactive setup form will appear. 
 You can also provide connection details via CLI flags or environment variables:
 
 ```bash
-uv run scale-cli --server 192.168.1.100 --api-key 1-abc...
+uv run truenasscale-tui --server 192.168.1.100 --api-key 1-abc...
 ```
 
 ## Docker
 
-Run scale-cli in a container — no Python or uv installation required.
+Run TrueNASScale-TUI in a container — no Python or uv installation required.
 
 ### Build and run
 
 ```bash
-docker build -t scale-cli .
+docker build -t truenasscale-tui .
+```
+
+**For Linux / macOS (Bash/Zsh):**
+```bash
 docker run -it --rm \
   -e TRUENAS_SERVER=192.168.1.100 \
   -e TRUENAS_API_KEY=1-abc... \
   -e TRUENAS_VERIFY_SSL=false \
-  scale-cli
+  truenasscale-tui
 ```
 
-> **Note:** The `-it` flags are required — scale-cli is a TUI app that needs an interactive terminal.
+**For Windows (PowerShell):**
+```powershell
+docker run -it --rm `
+  -e TRUENAS_SERVER=192.168.1.100 `
+  -e TRUENAS_API_KEY=1-abc... `
+  -e TRUENAS_VERIFY_SSL=false `
+  truenasscale-tui
+```
+
+> **Note:** The `-it` flags are required — TrueNASScale-TUI is a TUI app that needs an interactive terminal.
 
 ### Docker Compose
 
@@ -67,7 +80,7 @@ export TRUENAS_SERVER=192.168.1.100
 export TRUENAS_API_KEY=1-abc...
 
 # Run
-docker compose run --rm scale-cli
+docker compose run --rm truenasscale-tui
 ```
 
 Or create a `.env` file in the project root:
@@ -82,7 +95,7 @@ TRUENAS_VERIFY_SSL=false
 Then simply:
 
 ```bash
-docker compose run --rm scale-cli
+docker compose run --rm truenasscale-tui
 ```
 
 ### CLI flags with Docker
@@ -90,7 +103,7 @@ docker compose run --rm scale-cli
 You can pass CLI flags after the image name:
 
 ```bash
-docker run -it --rm scale-cli --server 192.168.1.100 --api-key 1-abc... --no-verify-ssl
+docker run -it --rm truenasscale-tui --server 192.168.1.100 --api-key 1-abc... --no-verify-ssl
 ```
 
 ## CLI Flags
@@ -138,7 +151,7 @@ Services screen:
 
 ### Config file
 
-`~/.config/scale-cli/config.toml`:
+`~/.config/truenasscale-tui/config.toml`:
 
 ```toml
 [server]
@@ -157,7 +170,7 @@ TRUENAS_SERVER=192.168.1.100
 TRUENAS_API_KEY=1-abc...
 TRUENAS_USERNAME=admin
 TRUENAS_VERIFY_SSL=false
-uv run scale-cli
+uv run truenasscale-tui
 ```
 
 Environment variables override the config file. CLI flags override everything.
@@ -174,7 +187,7 @@ The API key format is `{id}-{64-character-string}` (e.g. `1-a1b2c3d4...`).
 ## Architecture
 
 ```
-src/scale_cli/
+src/truenasscale_tui/
 ├── __init__.py          # entry point (argparse → ScaleApp.run())
 ├── app.py               # ScaleApp — reactive props, workers, subscriptions
 ├── api.py               # TrueNASWSClient — WebSocket JSON-RPC 2.0
@@ -199,10 +212,10 @@ All API communication uses JSON-RPC 2.0 over `wss://` WebSocket. Auth is via `au
 ## Development
 
 ```bash
-uv sync                    # install dependencies
-uv run ruff check .        # lint
-uv run ruff format .       # format
-uv run scale-cli           # run
+uv sync                        # install dependencies
+uv run ruff check .            # lint
+uv run ruff format .           # format
+uv run truenasscale-tui        # run
 ```
 
 ## License

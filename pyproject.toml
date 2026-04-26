@@ -1,5 +1,5 @@
 [project]
-name = "scale-cli"
+name = "truenasscale-tui"
 version = "0.1.0"
 description = "TUI for TrueNAS SCALE 25.04+ — JSON-RPC over WebSocket"
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-scale-cli = "scale_cli:main"
+truenasscale-tui = "truenasscale_tui:main"
 
 [build-system]
 requires = ["uv_build>=0.11.7,<0.12.0"]

@@ -11,8 +11,11 @@ dist
 *.egg-info
 .idea
 .vscode
+.agents
+node_modules
 *.log
 .DS_Store
 AGENTS.md
-LICENSE
-README.md
+Dockerfile
+docker-compose.yml
+.dockerignore

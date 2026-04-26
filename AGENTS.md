@@ -9,14 +9,14 @@ WebSocket endpoint: `wss://<host>/api/current` (auto-built from host/IP in confi
 ## Commands
 
 ```bash
-uv run scale-cli # run the TUI
-uv run scale-cli --server 192.168.1.100 --api-key 1-abc...  # with CLI flags
-uv run python -m scale_cli # alternative entry
-uv sync # install deps
-uv add <pkg> # add a dependency
-uv run ruff check . # lint
-uv run ruff format . # format
-graphify query graphify-out/graph.json <name> # search code symbols
+uv run truenasscale-tui                                        # run the TUI
+uv run truenasscale-tui --server 192.168.1.100 --api-key 1-abc...  # with CLI flags
+uv run python -m truenasscale_tui                              # alternative entry
+uv sync                                                        # install deps
+uv add <pkg>                                                   # add a dependency
+uv run ruff check .                                            # lint
+uv run ruff format .                                           # format
+graphify query graphify-out/graph.json <name>                  # search code symbols
 ```
 
 CLI flags: `--server` (host/IP only), `--username`, `--api-key`, `--no-verify-ssl`. These override config file and env vars.
@@ -26,7 +26,7 @@ No test runner or CI yet.
 ## Architecture
 
 ```
-src/scale_cli/
+src/truenasscale_tui/
   __init__.py          # main() → argparse → ScaleApp(config).run()
   app.py               # ScaleApp(App) — reactive props, workers, subscription listener, screen nav
   api.py               # TrueNASWSClient — WebSocket JSON-RPC 2.0, auth, reconnect
@@ -50,14 +50,14 @@ src/scale_cli/
 
 **Screen navigation**: Key bindings `1`/`2`/`3` switch between Dashboard, Storage, Services via `push_screen`. `c` opens Settings, `l` logs out (disconnects + returns to first-run).
 
-**Reactive data flow**: Screens use `app.watch(self, "pools", self._on_pools_change)` — NOT `on_app_pools_changed` (Textual auto-message naming would require `on_scale_app_pools_changed` which never fires). All watchers also populate widgets immediately on mount with current app state, so data that arrived before the screen mounted is still displayed.
+**Reactive data flow**: Screens use `self.watch(app, attr, callback)` — NOT `app.watch(self, ...)` which watches the screen instead of the app. All watchers also populate widgets immediately on mount with current app state, so data that arrived before the screen mounted is still displayed.
 
 ## Key classes
 
-- **`ScaleApp`** (`app.py:18`) — Textual App. Reactive properties: `connected`, `connection_error`, `system_info`, `device_info`, `realtime`, `pools`, `disks`, `disk_temps`, `services`. Workers handle init, teardown, subscriptions. Key bindings `r` refresh, `1`/`2`/`3` screens, `c` settings, `l` logout. `connect_and_subscribe()` is the public entry point for connecting after first-run/settings.
+- **`ScaleApp`** (`app.py:22`) — Textual App. Reactive properties: `connected`, `connection_error`, `system_info`, `realtime`, `pools`, `disks`, `disk_temps`, `services`. Workers handle init, teardown, subscriptions. Key bindings `r` refresh, `1`/`2`/`3` screens, `c` settings, `l` logout. `connect_and_subscribe()` is the public entry point for connecting after first-run/settings.
 - **`TrueNASWSClient`** (`api.py:30`) — Async context manager. `call()` sends JSON-RPC, matches responses by `id` via futures. `subscribe()`/`unsubscribe()` for `collection_update` events. Auto-retries on middleware timeout (`-32603`) with 3s backoff.
 - **`TrueNASAPIError`** (`api.py:22`) — Raised on JSON-RPC error responses. Carries `code`, `message`, `data`.
-- **`ScaleConfig`** (`config.py:17`) — Dataclass: `server_host` (IP/hostname), `username`, `api_key`, `verify_ssl`. `server_url` property auto-builds `wss://<host>/api/current`.
+- **`ScaleConfig`** (`config.py:33`) — Dataclass: `server_host` (IP/hostname), `username`, `api_key`, `verify_ssl`. `server_url` property auto-builds `wss://<host>/api/current`.
 
 ## Key constraints
 
@@ -68,14 +68,14 @@ src/scale_cli/
 - **Auth flow**: connect → `auth.login_with_api_key(api_key)` → authenticated calls. API key format: `{id}-{64-char-string}`. Auth takes a single string param (the key), NOT username+key.
 - **No batch requests** — one JSON-RPC call per WebSocket message.
 - **Self-signed certs**: TrueNAS uses self-signed certs by default. Set `verify_ssl = false` in config or `TRUENAS_VERIFY_SSL=false` env var. `api.py` creates a permissive `ssl.SSLContext` when disabled.
-- **Reactive watchers**: Always use `app.watch(self, attr, callback)` — never rely on `on_app_*_changed` message handlers (they require `on_scale_app_*` naming which doesn't fire).
+- **Reactive watchers**: Always use `self.watch(app, attr, callback)` — NOT `app.watch(self, ...)` which watches the wrong object. Never rely on `on_app_*_changed` message handlers (they require `on_scale_app_*` naming which doesn't fire).
 - **Init population**: Always call populate/update methods on mount with current app state, so data from before screen mount is visible.
 
 ## Config precedence
 
 1. CLI flags: `--server` (host/IP), `--username`, `--api-key`, `--no-verify-ssl`
 2. Environment variables: `TRUENAS_SERVER` or `TRUENAS_HOST`, `TRUENAS_API_KEY`, `TRUENAS_USERNAME`, `TRUENAS_VERIFY_SSL`
-3. Config file: `~/.config/scale-cli/config.toml`
+3. Config file: `~/.config/truenasscale-tui/config.toml`
 4. Defaults / first-run prompt in TUI
 
 Config file format:
@@ -91,8 +91,7 @@ Note: Old config files with `url = "wss://..."` are still supported — the host
 
 ## TrueNAS API methods (v1 scope)
 
-- `system.info` — hostname, version, uptime, load
-- `device.get_info` — CPU, memory hardware info
+- `system.info` — hostname, version, uptime, load (flat schema in 25.04: `hostname`, `version`, `model`, `cores`, `physmem`, `uptime_seconds`)
 - `reporting.realtime` — realtime metrics (preferred over `reporting.netdata_get_data`)
 - `pool.query` / `pool.get_instance` / `pool.scrub.get_state` — pool list, details, scrub status
 - `disk.query` / `disk.temperatures` — disk list and temps

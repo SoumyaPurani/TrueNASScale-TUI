@@ -7,7 +7,7 @@ from pathlib import Path
 
 import tomli_w
 
-CONFIG_DIR = Path.home() / ".config" / "scale-cli"
+CONFIG_DIR = Path.home() / ".config" / "truenasscale-tui"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
 
 _DEFAULT_HOST = "truenas.local"

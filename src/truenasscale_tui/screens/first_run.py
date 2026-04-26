@@ -41,7 +41,7 @@ class FirstRunScreen(Screen):
         yield Header()
         with Center():
             with Vertical(id="form"):
-                yield Label("scale-cli — First Run Setup", id="title-label")
+                yield Label("TrueNASScale-TUI — First Run Setup", id="title-label")
                 yield Label("TrueNAS Host / IP")
                 yield Input(
                     placeholder="192.168.1.100 or truenas.local",

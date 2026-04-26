@@ -8,7 +8,7 @@ from .config import ScaleConfig as ScaleConfig, load_config
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="scale-cli",
+        prog="truenasscale-tui",
         description="TUI for TrueNAS SCALE 25.04+",
     )
     parser.add_argument(

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class ScaleApp(App[None]):
     CSS_PATH = "tui.css"
-    TITLE = "scale-cli"
+    TITLE = "TrueNASScale-TUI"
     SUB_TITLE = "TrueNAS Scale TUI"
 
     SCREENS = {
