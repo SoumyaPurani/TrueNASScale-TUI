@@ -2,6 +2,8 @@
 
 A terminal user interface for TrueNAS SCALE 25.04+, built with [Textual](https://textual.textualize.io/).
 
+![TrueNASScale-TUI Dashboard](assets/dashboard.png)
+
 Connects to TrueNAS via **JSON-RPC 2.0 over WebSocket** — the only API available in SCALE 25.04+ (the old REST API has been removed).
 
 ## Features
