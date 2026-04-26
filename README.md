@@ -23,7 +23,7 @@ Connects to TrueNAS via **JSON-RPC 2.0 over WebSocket** — the only API availab
 ## Installation
 
 ```bash
-https://github.com/SoumyaPurani/TrueNASScale-TUI
+git clone https://github.com/SoumyaPurani/TrueNASScale-TUI
 cd scale-cli
 uv sync
 ```
