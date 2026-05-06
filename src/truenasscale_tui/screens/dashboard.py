@@ -93,59 +93,6 @@ class DashboardScreen(Screen):
         try:
             card = self.query_one("#system-info", SystemInfoCard)
             card.update_data(info or {})
-        except Exception:
-            pass
-
-    def _on_realtime_change(self, data: dict | None) -> None:
-        try:
-            widget = self.query_one("#realtime-metrics", RealtimeMetrics)
-            widget.update_data(data or {})
-        except Exception:
-            pass
-
-    def _on_pools_change(self, pools: list | None) -> None:
-        try:
-            widget = self.query_one("#pool-summary", PoolSummaryTable)
-            widget.update_data(pools or [])
-        except Exception:
-            pass
-
-    def _on_disks_change(self, disks: list | None) -> None:
-        try:
-            app: ScaleApp = self.app  # type: ignore[assignment]
-            widget = self.query_one("#disk-summary", DiskSummaryTable)
-            widget.update_data(disks or [], app.disk_temps or {})
-        except Exception:
-            pass
-
-    def _on_disk_temps_change(self, temps: dict | None) -> None:
-        try:
-            app: ScaleApp = self.app  # type: ignore[assignment]
-            widget = self.query_one("#disk-summary", DiskSummaryTable)
-            widget.update_data(app.disks or [], temps or {})
-        except Exception:
-            pass
-
-    def _on_services_change(self, services: list | None) -> None:
-        try:
-            widget = self.query_one("#service-summary", ServiceSummaryTable)
-            widget.update_data(services or [])
-        except Exception:
-            pass
-
-    def _on_connection_error_change(self, error: str) -> None:
-        try:
-            if error:
-                banner = self.query_one("#connection-banner", Static)
-                banner.update(f"disconnected — {error}")
-                banner.styles.color = "red"
-        except Exception as e:
-            self.app.log.error(f"Error in handler: {e}")
-
-    def _on_system_info_change(self, info: dict | None) -> None:
-        try:
-            card = self.query_one("#system-info", SystemInfoCard)
-            card.update_data(info or {})
         except Exception as e:
             self.app.log.error(f"Error in handler: {e}")
 

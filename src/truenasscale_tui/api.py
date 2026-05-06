@@ -65,7 +65,7 @@ class TrueNASWSClient:
         logger.info("authenticated")
         return result
 
-    async def call(self, method: str, *params: Any) -> Any:
+    async def call(self, method: str, *params: Any, _max_retries: int = 3) -> Any:
         if not self._ws:
             msg = "not connected"
             raise RuntimeError(msg)
@@ -87,14 +87,15 @@ class TrueNASWSClient:
         try:
             return await future
         except TrueNASAPIError as exc:
-            if exc.code == _MIDWARE_TIMEOUT:
+            if exc.code == _MIDWARE_TIMEOUT and _max_retries > 0:
                 logger.warning(
-                    "middleware timeout on %s, retrying in %ss",
+                    "middleware timeout on %s, retrying in %ss (%d retries left)",
                     method,
                     _BACKOFF_SECONDS,
+                    _max_retries,
                 )
                 await asyncio.sleep(_BACKOFF_SECONDS)
-                return await self.call(method, *params)
+                return await self.call(method, *params, _max_retries=_max_retries - 1)
             raise
 
     async def subscribe(
@@ -137,13 +138,6 @@ class TrueNASWSClient:
         )
         return result
 
-    async def device_info(self) -> dict[str, Any]:
-        result = await self.call("device.get_info")
-        logger.info(
-            "device.get_info raw response: %s", json.dumps(result, default=str)[:2000]
-        )
-        return result
-
     async def reporting_realtime(self) -> dict[str, Any]:
         result = await self.call("reporting.realtime")
         logger.debug(
@@ -156,9 +150,9 @@ class TrueNASWSClient:
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         params: list[Any] = []
-        if filters:
-            params.append(filters)
-        if options and filters:
+        if filters or options:
+            params.append(filters or [])
+        if options:
             params.append(options)
         result = await self.call("pool.query", *params)
         logger.info(
@@ -170,6 +164,9 @@ class TrueNASWSClient:
     async def pool_get_instance(self, pool_id: int) -> dict[str, Any]:
         return await self.call("pool.get_instance", pool_id)
 
+    async def pool_scrub(self, pool_id: int) -> Any:
+        return await self.call("pool.scrub", pool_id)
+
     async def pool_scrub_state(self, pool_id: int) -> dict[str, Any]:
         return await self.call("pool.scrub.get_state", pool_id)
 
@@ -177,9 +174,9 @@ class TrueNASWSClient:
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         params: list[Any] = []
-        if filters:
-            params.append(filters)
-        if options and filters:
+        if filters or options:
+            params.append(filters or [])
+        if options:
             params.append(options)
         return await self.call("disk.query", *params)
 
@@ -195,9 +192,9 @@ class TrueNASWSClient:
         self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
         params: list[Any] = []
-        if filters:
-            params.append(filters)
-        if options and filters:
+        if filters or options:
+            params.append(filters or [])
+        if options:
             params.append(options)
         result = await self.call("service.query", *params)
         logger.info(
@@ -206,10 +203,30 @@ class TrueNASWSClient:
         )
         return result
 
-    async def service_control(self, service: str, action: str) -> dict[str, Any]:
-        return await self.call(
-            "service.control", {"service": service, "action": action}
+    async def service_control(self, service: str, action: str) -> Any:
+        verb = action.upper()
+        logger.info("service.control(%s, %s)", verb, service)
+        result = await self.call("service.control", verb, service)
+        logger.info(
+            "service.control(%s, %s) => %s (type=%s)",
+            verb,
+            service,
+            result,
+            type(result).__name__,
         )
+        return result
+
+    async def core_get_jobs(
+        self, filters: list[Any] | None = None, options: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
+        params: list[Any] = []
+        if filters or options:
+            params.append(filters or [])
+        if options:
+            params.append(options)
+        result = await self.call("core.get_jobs", *params)
+        logger.info("core.get_jobs returned %d jobs", len(result) if result else 0)
+        return result
 
     async def _listen(self) -> None:
         assert self._ws is not None

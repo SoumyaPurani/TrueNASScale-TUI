@@ -45,3 +45,12 @@ graphify-out/
 config.toml
 secrets.toml
 auth.json
+
+# OpenCode
+opencode.json
+AGENTS.md
+
+# claude
+CLAUDE.md
+.claude
+claude.json

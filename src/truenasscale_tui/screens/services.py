@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from textual import work
+
+from ..api import TrueNASAPIError
 from textual.containers import VerticalScroll
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
@@ -108,22 +110,29 @@ class ServicesScreen(Screen):
         if svc:
             self._control_service(svc, "restart")
 
-    @work(name="service-control", group="svc-ctrl", exclusive=True)
+    @work(name="service-control", group="svc-ctrl", exclusive=False)
     async def _control_service(self, service: str, action: str) -> None:
         app: ScaleApp = self.app  # type: ignore[assignment]
         if not app.connected:
             return
         try:
             result = await app.api.service_control(service, action)
-            job_id = (
-                result
-                if isinstance(result, (int, float))
-                else result.get("job_id", None)
-            )
-            msg = f"{action.capitalize()} {service}"
-            if job_id:
-                msg += f" (job {job_id})"
-            self.notify(msg)
-            self.services = await app.api.service_query()
+            if isinstance(result, bool):
+                status = "OK" if result else "failed"
+                self.notify(f"{action.capitalize()} {service}: {status}")
+            elif isinstance(result, int):
+                self.notify(f"{action.capitalize()} {service} (job {result})")
+            elif isinstance(result, dict) and "job_id" in result:
+                self.notify(f"{action.capitalize()} {service} (job {result['job_id']})")
+            else:
+                self.notify(f"{action.capitalize()} {service}")
+            app.services = await app.api.service_query()
+        except TrueNASAPIError as exc:
+            hint = ""
+            if exc.code == -32602:
+                hint = " (invalid params — check service name)"
+            elif exc.code in (-32600, 403):
+                hint = " (API key may lack write access)"
+            self.notify(f"Failed: {exc}{hint}", severity="error")
         except Exception as exc:
             self.notify(f"Failed: {exc}", severity="error")

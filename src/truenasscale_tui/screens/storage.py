@@ -189,7 +189,7 @@ class StorageScreen(Screen):
         if pool_id is None:
             return
         try:
-            await app.api.call("pool.scrub", pool_id)
+            await app.api.pool_scrub(pool_id)
             self.notify(f"Scrub started on {pool_name}")
         except Exception as exc:
             self.notify(f"Scrub failed: {exc}", severity="error")
