@@ -169,7 +169,7 @@ class StorageScreen(Screen):
         table = self.query_one("#pool-table", DataTable)
         if table.row_count > 0:
             try:
-                row = table.get_row(table.cursor_row)
+                row = table.get_row_at(table.cursor_row)
                 pool_name = row[0]
                 self._start_scrub(pool_name)
             except Exception:
@@ -177,7 +177,7 @@ class StorageScreen(Screen):
 
     @work(name="scrub-start", group="scrub", exclusive=True)
     async def _start_scrub(self, pool_name: str) -> None:
-        app: ScaleApp = self.app  # type: ignore[assignment]
+        app: ScaleApp = self.app
         if not app.connected:
             return
         pools = app.pools

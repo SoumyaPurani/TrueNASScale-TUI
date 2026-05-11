@@ -75,7 +75,13 @@ class ScaleApp(App[None]):
         self._init_worker()
 
     def action_switch_screen(self, name: str) -> None:
-        self.push_screen(name)
+        screen = self.SCREENS[name]
+        if not isinstance(self.screen, screen) and name not in (
+            "first_run",
+            "settings",
+        ):
+            self.pop_screen()
+            self.push_screen(name)
 
     def action_settings(self) -> None:
         self.push_screen("settings")
